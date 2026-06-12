@@ -1,4 +1,4 @@
-package main.java.controller;
+package main.java.controllers;
 import java.io.*;
 import jakarta.servlet.*;
 import jakarta.servlet.ServletException;

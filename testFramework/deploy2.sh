@@ -39,3 +39,9 @@ cd ..
 cp -f $BUILD_DIR/$APP_NAME.war $TOMCAT_WEBAPPS/
 
 echo "Déploiement terminé.Redémarrez Tomcat si nécessaire."
+TOMCAT_BIN="/home/mirantsoa/tomcat/apache-tomcat-10.0.16/bin"
+
+echo "🚀 Démarrage de Tomcat..."
+cd "$TOMCAT_BIN" || exit
+pgrep -f "org.apache.catalina.startup.Bootstrap" > /dev/null 2>&1 && ./shutdown.sh
+./startup.sh
