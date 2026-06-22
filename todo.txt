@@ -1,0 +1,60 @@
+## Sprint 0 : Front controller
+- creation de FrontController
+- creation du fonction processRequest
+- apple de process request avec doGet et doPost
+
+
+##Sprint1
+But: afficher la liste des controllers stockés dans la variable de Front
+sysFramework
+_creer une classe d'annotation dans le sysFramework et mettre dans main.java.controllers
+_utilisation init() ou listener
+    bout de code qui s'execute au demarrage :premier appel du FrontControllerServlet(ici on choisit init())
+
+_FrontControllerServlet
+    ajouter un attribut List<String>listController
+        +init() , parcourir toutes les classes dans le classpath (verifier s'il y a des controller ,annotation)
+    processRequest
+        boucle et affiche
+    +methode qui verifie s'il y a annotation en parcourant package 
+
+
+-ajout variable dans web.xml ( dans testFramework)
+test
+_creer 3 classes de teste et annoter 2
+annoter
+
+##Sprint2
+_Créer class EmpController at annoter par @Controller
+_Créer annotation(UrlMapping) type methode, il aura besoin de variable (prend en compte un parametre)
+    _methode list() annoté par UrlMapping
+
+exemple: @UrlMapping("/emp/list")
+si il possède une annotation -> emp/list est dans la class EmpController -> list
+        @UrlMapping("/emp/create") EmpController -> create
+
+Output, à stocker et afficher:
+le controller et methode associé à l'Url
+ex:
+url: /emp/list
+-> EmpController ,list
+url: /emp/create
+-> EmpController ,create
+Si l'url n'existe pas, throwsException et afficher la liste de tous les url avec leur controller et methode associée
+
+[] Créer EmpController
+[] Annoter EmpController avec @Controller
+[] Créer l’annotation @UrlMapping
+[] Faire en sorte que @UrlMapping s’applique aux méthodes
+[] Créer les méthodes list() et create() dans EmpController
+[] Annoter list() avec @UrlMapping("/emp/list")
+[] Annoter create() avec @UrlMapping("/emp/create")
+[] Scanner les méthodes des controllers pour récupérer les UrlMapping
+[] Stocker l’association entre URL, controller et méthode
+[] Chercher la bonne méthode quand une URL est appelée
+[] Afficher le controller et la méthode si l’URL existe
+[] Afficher une erreur si l’URL n’existe pas
+[] Afficher la liste complète des URLs disponibles en cas d’erreur
+[] Tester avec /emp/list
+[] Tester avec /emp/create
+[] Tester avec une URL inexistante
