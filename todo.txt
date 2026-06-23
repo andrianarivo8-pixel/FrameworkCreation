@@ -16,7 +16,7 @@ _FrontControllerServlet
         +init() , parcourir toutes les classes dans le classpath (verifier s'il y a des controller ,annotation)
     processRequest
         boucle et affiche
-    +methode qui verifie s'il y a annotation en parcourant package 
+_class utilitaire : +methode qui verifie s'il y a annotation en parcourant package 
 
 
 -ajout variable dans web.xml ( dans testFramework)
