@@ -7,16 +7,13 @@ version="2.4">
 
 <display-name>Application WEB affichant HelloWorld</display-name>
 <servlet>
-
 <servlet-name>FrameworkMVC</servlet-name>
 <servlet-class>main.java.controllers.FrontControllerServlet</servlet-class>
-
 <init-param>
-    <param-name>scanPackage</param-name>
-    <param-value>main.java.controllers</param-value>
-    <description>Package racine à scanner pour les controllers</description>
+<param-name>scanPackage</param-name>
+<param-value>main.java.controllers</param-value>
+<description>Package racine à scanner pour les controllers</description>
 </init-param>
-
 </servlet>
 
 <servlet-mapping>
