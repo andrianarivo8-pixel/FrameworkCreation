@@ -7,7 +7,7 @@ SRC_DIR="src/main/java"
 BUILD_DIR="build_jar"
 LIB_DIR="lib"
 TOMCAT_WEBAPPS="/home/mirantsoa/tomcat/apache-tomcat-10.0.16/webapps"
-TARGET_PROJECT_LIB="../testFramework/lib"
+TARGET_PROJECT_LIB="../../testFramework/lib"
 
 # SERVLET_API_JAR="$LIB_DIR/servlet-api.jar"
 
