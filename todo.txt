@@ -58,3 +58,31 @@ Si l'url n'existe pas, throwsException et afficher la liste de tous les url avec
 [] Tester avec /emp/list
 [] Tester avec /emp/create
 [] Tester avec une URL inexistante
+
+Sprint3
+meme url mais: _get
+                _post
+
+testController
+@url("list") <- Get
+m1(methode1)
+
+@url("list") <- POST
+m2(methode2)
+
+UrlMethod u1 = new UrlMethod
+
+
+### Sprint 3 : suite de Sprint 2
+Prise en charge des types de methode http (GET/POST)
+- Creation d'une classe UrlMethode :
+    - attributs :
+        - url (String)
+        - methode (String ou creation d'un Enum java) GET/POST
+    - Override de la fonction equals pour des futurs comparaison
+- Ajout d'un nouveau attribut dans l'annotation UrlMapping : method pour definir le methode http
+- Changement de la clé de l'ancien map par la nouvelle classe
+- Mise à jour de la fonction initMApping
+
+### Sprint 3-Bis
+- Invocation de la methode qui contient le l'url par reflexion
