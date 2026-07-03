@@ -58,6 +58,12 @@ public class FrontControllerServlet extends HttpServlet {
                             clazz.getName(),
                             method.getName()
                         );
+                        
+                        if (urlMappings.containsKey(urlMethod)) {
+            throw new ServletException("ERREUR: Il y a doublon !\n" +
+                "L'URL + Méthode HTTP est déjà utilisée :\n" +
+                urlMethod + " est utilisé par deux méthodes.");
+        }
 
                         urlMappings.put(urlMethod, mapping);
                     }
@@ -85,13 +91,31 @@ protected void processRequest(HttpServletRequest req, HttpServletResponse resp)
     // On crée un objet UrlMethod pour la recherche dans la map
     UrlMethod requestedKey = new UrlMethod(url, httpMethodStr);
     
-    // pour
+    // récupérer le mapping correspondant à l'URL et à la méthode HTTP
     Mapping mapping = urlMappings.get(requestedKey);
     if (mapping != null) {
-            out.println("URL trouvée : " + url);
-            out.println("Méthode HTTP : " + httpMethodStr);
+        // On peut maintenant instancier le controller et invoquer la méthode correspondante
+        //invocation de la méthodepar reflection
+            Class<?> controllerClass = Class.forName(mapping.getClassName());
+            Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
+
+            Method methodToInvoke = controllerClass.getDeclaredMethod(mapping.getMethodName());
+            
+            // Appel de la méthode
+            Object result = methodToInvoke.invoke(controllerInstance);
+            if (result != null) {
+                out.println("Result : " + result);
+            }
+            else {
+                out.println("Result : methode void ou null");
+            }
+ 
+            // out.println("Methode execute avec succes !");
+            out.println("URL : " + url);
+            out.println("HTTP Method : " + httpMethodStr);
             out.println("Controller : " + mapping.getClassName());
             out.println("Méthode : " + mapping.getMethodName() + "()");
+
         } else {
             out.println("URL/Méthode non trouvée : " + httpMethodStr + " " + url);
             out.println("Mappings disponibles :");
