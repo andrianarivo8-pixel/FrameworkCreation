@@ -24,7 +24,7 @@ public class FrontControllerListener implements ServletContextListener {
 public void contextInitialized(ServletContextEvent sce) {
     ServletContext context = sce.getServletContext();
     
-    System.out.println("=== FrontControllerListener démarré ===");
+    System.out.println("=== FrontControllerListener démarre ===");
     
     try {
         String scanPackage = context.getInitParameter("scanPackage");
@@ -36,10 +36,10 @@ public void contextInitialized(ServletContextEvent sce) {
         }
 
         List<Class<?>> allClasses = UtilAnalyser.findClasses(scanPackage);
-        System.out.println("Nombre de classes trouvées : " + allClasses.size());
+        System.out.println("Nombre de classes trouvees : " + allClasses.size());
 
         List<Class<?>> annotatedClasses = ScanAnnotation.findAnnotatedClasses(allClasses, Controller.class);
-        System.out.println("Nombre de @Controller trouvés : " + annotatedClasses.size());
+        System.out.println("Nombre de @Controller trouves : " + annotatedClasses.size());
 
         Map<UrlMethod, Mapping> urlMappings = new HashMap<>();
 
