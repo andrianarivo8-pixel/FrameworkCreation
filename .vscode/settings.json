@@ -1,0 +1,9 @@
+{
+    "java.project.sourcePaths": [
+        "sysFramework/src"
+    ],
+    "java.project.referencedLibraries": [
+        "sysFramework/lib/jakarta.servlet-api-6.0.0.jar",
+        "sysFramework/lib/servlet-api.jar"
+    ]
+}
