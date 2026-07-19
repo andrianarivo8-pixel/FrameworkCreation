@@ -17,14 +17,19 @@ import main.java.utils.ScanAnnotation;
 import main.java.utils.UtilAnalyser;
 
 public class FrontControllerListener implements ServletContextListener {
-        
-    
+   
+    private static final String SPRING_ROOT = "org.springframework.web.context.WebApplicationContext.ROOT";
+
 
 @Override
 public void contextInitialized(ServletContextEvent sce) {
     ServletContext context = sce.getServletContext();
-    
-    System.out.println("=== FrontControllerListener démarre ===");
+    Object springContext = context.getAttribute(SPRING_ROOT);
+    context.setAttribute(SPRING_ROOT, springContext);
+
+    System.out.println("springContext trouvé : " + (springContext != null));
+
+    // System.out.println("=== FrontControllerListener démarre ===");
     
     try {
         String scanPackage = context.getInitParameter("scanPackage");

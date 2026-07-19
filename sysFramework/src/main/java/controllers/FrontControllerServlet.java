@@ -16,6 +16,9 @@ import main.java.view.ModelAndView;
 
 import java.util.Map;
 
+import org.springframework.web.context.WebApplicationContext;
+import main.java.utils.Util;
+
 public class FrontControllerServlet extends HttpServlet {
 
     protected void processRequest(HttpServletRequest req, HttpServletResponse resp)
@@ -25,6 +28,7 @@ public class FrontControllerServlet extends HttpServlet {
 
         try {
             ServletContext context = req.getServletContext();
+            WebApplicationContext springContext = (WebApplicationContext) context.getAttribute("springContext");
             @SuppressWarnings("unchecked")
             Map<UrlMethod, Mapping> mappings = (Map<UrlMethod, Mapping>) context.getAttribute("urlMappings");
 
@@ -52,7 +56,15 @@ public class FrontControllerServlet extends HttpServlet {
                 }
                 Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
 
-                ModelAndView result = (ModelAndView)methodToInvoke.invoke(controllerInstance);
+                ModelAndView result;
+                if(Util.haveParameter(methodToInvoke, WebApplicationContext.class)) {
+                    if(springContext == null) {
+                        throw new ServletException("Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans web.xml");
+                    }
+                    result = (ModelAndView) methodToInvoke.invoke(controllerInstance, springContext);
+                } else {
+                    result = (ModelAndView) methodToInvoke.invoke(controllerInstance);
+                }
 
                 addArgToRequest(req, result.getData());
                 String viewPath = result.getViewName();
