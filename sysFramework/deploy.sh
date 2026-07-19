@@ -6,24 +6,27 @@ SRC_DIR="src/main/java"
 # WEB_DIR="src/main/webapps"
 BUILD_DIR="build_jar"
 LIB_DIR="lib"
-TOMCAT_WEBAPPS="/home/mirantsoa/tomcat/apache-tomcat-10.0.16/webapps"
+TOMCAT_HOME="/home/mirantsoa/tomcat/apache-tomcat-10.0.16"
+TOMCAT_WEBAPPS="$TOMCAT_HOME/webapps"
+TOMCAT_BIN="$TOMCAT_HOME/bin"
 TARGET_PROJECT_LIB="/home/mirantsoa/Documents/GitHub/testFramework/lib"
 
-# SERVLET_API_JAR="$LIB_DIR/servlet-api.jar"
-
+# Jars déjà fournis par Tomcat (dans $CATALINA_HOME/lib) : ne JAMAIS les copier
+# dans le lib/ d'un webapp, sinon conflit de classes avec le conteneur au démarrage.
+EXCLUDE_FROM_DEPLOY=("servlet-api.jar" "jakarta.servlet-api-6.0.0.jar")
 
 # Nettoyage et création du répertoire temporaire
-rm -rf $BUILD_DIR
-mkdir -p $BUILD_DIR
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"
 
 echo "💡 Compilation du framework..."
 
 # Compilation des fichiers Java avec le JAR des Servlets
 # On inclut les dépendances existantes si tu en as dans le dossier lib/ de SysFramework
-if [ -d "$LIB_DIR" ] && [ "$(ls -A $LIB_DIR)" ]; then
-    javac -cp "$LIB_DIR/*" -d $BUILD_DIR $(find $SRC_DIR -name "*.java")
+if [ -d "$LIB_DIR" ] && [ "$(ls -A "$LIB_DIR")" ]; then
+    javac -cp "$LIB_DIR/*" -d "$BUILD_DIR" $(find "$SRC_DIR" -name "*.java")
 else
-    javac -d $BUILD_DIR $(find $SRC_DIR -name "*.java")
+    javac -d "$BUILD_DIR" $(find "$SRC_DIR" -name "*.java")
 fi
 
 # Vérification du succès de la compilation
@@ -35,21 +38,43 @@ fi
 echo "📦 Création du fichier .jar..."
 
 # Générer le fichier .jar à partir des .class compilés
-cd $BUILD_DIR || exit
-jar -cvf $APP_NAME.jar *
-cd ..
+(cd "$BUILD_DIR" && jar -cvf "$APP_NAME.jar" *)
+
+if [ ! -f "$BUILD_DIR/$APP_NAME.jar" ]; then
+    echo "❌ Erreur : le fichier $APP_NAME.jar n'a pas été généré."
+    exit 1
+fi
 
 # Déploiement vers l'autre projet
 if [ -d "$TARGET_PROJECT_LIB" ]; then
     echo "🚚 Copie de $APP_NAME.jar dans le classpath de l'autre projet..."
-    cp -f $BUILD_DIR/$APP_NAME.jar "$TARGET_PROJECT_LIB/"
-    echo "✅ Déploiement et mise à jour du JAR terminés avec succès.Redémarrez Tomcat si nécessaire."
+    cp -f "$BUILD_DIR/$APP_NAME.jar" "$TARGET_PROJECT_LIB/"
+
+    # Le framework dépend maintenant de Spring : ces jars doivent aussi
+    # atterrir dans testFramework, sinon NoClassDefFoundError au runtime.
+    if [ -d "$LIB_DIR" ] && [ "$(ls -A "$LIB_DIR")" ]; then
+        echo "🚚 Copie des dépendances (Spring, etc.) nécessaires à l'exécution..."
+        for jar in "$LIB_DIR"/*.jar; do
+            jarname=$(basename "$jar")
+            skip=false
+            for excluded in "${EXCLUDE_FROM_DEPLOY[@]}"; do
+                if [ "$jarname" == "$excluded" ]; then
+                    skip=true
+                    break
+                fi
+            done
+            if [ "$skip" = false ]; then
+                cp -f "$jar" "$TARGET_PROJECT_LIB/"
+                echo "   + $jarname"
+            fi
+        done
+    fi
+
+    echo "✅ Déploiement et mise à jour du JAR + dépendances terminés avec succès. Redémarrez Tomcat si nécessaire."
 else
     echo "⚠️  Le dossier de destination '$TARGET_PROJECT_LIB' n'existe pas."
     echo "Le fichier JAR est disponible ici : $BUILD_DIR/$APP_NAME.jar"
 fi
-
-TOMCAT_BIN="/home/mirantsoa/tomcat/apache-tomcat-10.0.16/bin"
 
 # echo "🚀 Démarrage de Tomcat..."
 # cd "$TOMCAT_BIN" || exit
