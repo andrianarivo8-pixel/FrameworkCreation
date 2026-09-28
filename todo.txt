@@ -86,3 +86,12 @@ Prise en charge des types de methode http (GET/POST)
 
 ### Sprint 3-Bis
 - Invocation de la methode qui contient le l'url par reflexion
+
+##Sprint 6 : ajout d'annotation API et execution
+_creation d'une nouveau annotation appeler WEBAPIREST, au niveau methode
+
+_tester l'existence d'annotation :
+    si existe ,mireturn json
+    sinon dispatch 
+
+

@@ -9,7 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
+import main.java.annotations.WebApiRest;
 import main.java.model.Mapping;
 import main.java.model.UrlMethod;
 import main.java.view.ModelAndView;
@@ -50,37 +50,48 @@ public class FrontControllerServlet extends HttpServlet {
                 Class<?> controllerClass = mapping.getClassName();
                 Method methodToInvoke = mapping.getMethodName();
 
-                if (methodToInvoke.getReturnType() != ModelAndView.class) {
+                Class<?> returnType = methodToInvoke.getReturnType();
+
+                if (returnType != ModelAndView.class && methodToInvoke.isAnnotationPresent(WebApiRest.class)) {
                     throw new ServletException("La méthode " + methodToInvoke.getName() + " du controller "
                             + controllerClass.getSimpleName() + " doit retourner un objet ModelAndView.");
                 }
                 Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
 
-                ModelAndView result;
-                if(Util.haveParameter(methodToInvoke, WebApplicationContext.class)) {
-                    if(springContext == null) {
-                        throw new ServletException("Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans web.xml");
+                Object result;
+                if (Util.haveParameter(methodToInvoke, WebApplicationContext.class)) {
+                    if (springContext == null) {
+                        throw new ServletException(
+                                "Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans web.xml");
                     }
-                    result = (ModelAndView) methodToInvoke.invoke(controllerInstance, springContext);
+                    result = (Object) methodToInvoke.invoke(controllerInstance, springContext);
                 } else {
-                    result = (ModelAndView) methodToInvoke.invoke(controllerInstance);
+                    result = (Object) methodToInvoke.invoke(controllerInstance);
                 }
 
-                addArgToRequest(req, result.getData());
-                String viewPath = result.getViewName();
-                String prefix = context.getInitParameter("viewprefix");
-                String suffix = context.getInitParameter("viewsuffix");
-                String fullViewPath = "/"+ prefix + "/" + viewPath + suffix;
-                req.getRequestDispatcher((fullViewPath)).forward(req, resp);
-                
-                // Affichage
-                out.println("✅ Méthode exécutée avec succès !");
-                out.println("URL : " + url);
-                out.println("HTTP Method : " + httpMethodStr);
-                out.println("Controller : " + controllerClass.getSimpleName());
-                out.println("Méthode : " + methodToInvoke.getName() + "()");
+                if (result instanceof ModelAndView) {
+                    addArgToRequest(req, ((ModelAndView) result).getData());
 
-            } else {
+                    String viewPath = ((ModelAndView) result).getViewName();
+                    String prefix = context.getInitParameter("viewprefix");
+                    String suffix = context.getInitParameter("viewsuffix");
+                    String fullViewPath = "/" + prefix + "/" + viewPath + suffix;
+                    req.getRequestDispatcher((fullViewPath)).forward(req, resp);
+                } else {
+                    if (result instanceof String) {
+                        out.println((String) result);
+                        resp.setContentType("application/json");
+                        resp.getWriter().write((String) result);
+                    } else {
+                        out.println(result);
+                        resp.setContentType("application/json");
+                        resp.getWriter().write(Util.ObjectToStringJson(result));
+                    }
+                }
+
+            }
+
+            else {
                 out.println("❌ URL/Méthode non trouvée : " + httpMethodStr + " " + url);
                 out.println("\nMappings disponibles :");
 
@@ -88,9 +99,16 @@ public class FrontControllerServlet extends HttpServlet {
                     UrlMethod key = entry.getKey();
                     Mapping m = entry.getValue();
                     out.println(key + " -> " + m.getClassName().getSimpleName() + "."
-                                + m.getMethodName().getName() + "()");
+                            + m.getMethodName().getName() + "()");
                 }
             }
+
+            // // Affichage
+            // out.println("✅ Méthode exécutée avec succès !");
+            // out.println("URL : " + url);
+            // out.println("HTTP Method : " + httpMethodStr);
+            // out.println("Controller : " + controllerClass.getSimpleName());
+            // out.println("Méthode : " + methodToInvoke.getName() + "()");
 
         } catch (Exception e) {
             out.println("❌ Erreur : " + e.getMessage());
