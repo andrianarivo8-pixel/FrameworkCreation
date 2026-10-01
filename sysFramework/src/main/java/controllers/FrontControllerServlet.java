@@ -17,6 +17,8 @@ import main.java.view.ModelAndView;
 import java.util.Map;
 
 import org.springframework.web.context.WebApplicationContext;
+
+import main.java.utils.JsonUtil;
 import main.java.utils.Util;
 
 public class FrontControllerServlet extends HttpServlet {
@@ -52,14 +54,15 @@ public class FrontControllerServlet extends HttpServlet {
 
                 Class<?> returnType = methodToInvoke.getReturnType();
 
-                if (returnType != ModelAndView.class && methodToInvoke.isAnnotationPresent(WebApiRest.class)) {
+                if (returnType != ModelAndView.class &&  !(methodToInvoke.isAnnotationPresent(WebApiRest.class))) {
                     throw new ServletException("La méthode " + methodToInvoke.getName() + " du controller "
                             + controllerClass.getSimpleName() + " doit retourner un objet ModelAndView.");
                 }
                 Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
 
                 Object result;
-                if (Util.haveParameter(methodToInvoke, WebApplicationContext.class)) {
+                
+                if (Util.haveParameter(methodToInvoke, "org.springframework.web.context.WebApplicationContext")) {
                     if (springContext == null) {
                         throw new ServletException(
                                 "Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans web.xml");
@@ -79,13 +82,13 @@ public class FrontControllerServlet extends HttpServlet {
                     req.getRequestDispatcher((fullViewPath)).forward(req, resp);
                 } else {
                     if (result instanceof String) {
-                        out.println((String) result);
+                        // out.println((String) result);
                         resp.setContentType("application/json");
                         resp.getWriter().write((String) result);
                     } else {
-                        out.println(result);
+                        // out.println(result);
                         resp.setContentType("application/json");
-                        resp.getWriter().write(Util.ObjectToStringJson(result));
+                        resp.getWriter().write(JsonUtil.ObjectToStringJson(result));
                     }
                 }
 
