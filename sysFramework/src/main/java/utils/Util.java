@@ -45,4 +45,16 @@ public class Util {
         // Pour les autres types on renvoie la String brute
         return value;
     }
+    public static boolean isSimpleType(Class<?> type) {
+    return type == String.class
+        || type == int.class || type == Integer.class
+        || type == long.class || type == Long.class
+        || type == double.class || type == Double.class
+        || type == boolean.class || type == Boolean.class
+        || type == float.class || type == Float.class
+        || type == short.class || type == Short.class
+        || type == byte.class || type == Byte.class
+        || type == char.class || type == Character.class
+        || type.isPrimitive();
+}
 }

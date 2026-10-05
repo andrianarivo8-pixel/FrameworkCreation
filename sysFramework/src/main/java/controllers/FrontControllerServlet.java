@@ -2,6 +2,7 @@ package main.java.controllers;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import jakarta.servlet.ServletContext;
@@ -71,40 +72,71 @@ public class FrontControllerServlet extends HttpServlet {
 
                 boolean hasRequestParams = requestParams != null && !requestParams.isEmpty();
 
-                for(int i = 0; i < methodParams.length; i++) {
-                    java.lang.reflect.Parameter param = methodParams[i];
-                    String paramName = param.getName(); //nom du paramètre de la méthode
-                    Class<?> paramType = param.getType(); //type du paramètre de la méthode 
+                // 4. Parcourir les paramètres de la méthode
+                        for(int i = 0; i < methodParams.length; i++) {
+                            java.lang.reflect.Parameter param = methodParams[i];
+                            String paramName = param.getName(); //nom du paramètre de la méthode
+                            Class<?> paramType = param.getType(); //type du paramètre de la méthode 
 
-                    // Cas spécial déjà existant : WebApplicationContext
-                if (paramType.getName().equals("org.springframework.web.context.WebApplicationContext")) {
-                    if (springContext == null) {
-                        throw new ServletException(
-                            "Aucun springContext disponible : vérifiez que ContextLoaderListener est bien dans web.xml");
-                    }
-                    args[i] = springContext;
-                    continue;
-                }
+                            // Cas spécial déjà existant : WebApplicationContext
+                             if (paramType.getName().equals("org.springframework.web.context.WebApplicationContext")) {
+                            if (springContext == null) {
+                                throw new ServletException(
+                                    "Aucun springContext disponible : vérifiez que ContextLoaderListener est bien dans web.xml");
+                            }
+                            args[i] = springContext;
+                            continue;
+                             }
 
-                // Si la requête a des paramètres → on essaie de matcher
-                if (hasRequestParams && requestParams.containsKey(paramName)) {
-                    String[] values = requestParams.get(paramName);
-                    String value = (values != null && values.length > 0) ? values[0] : null;
 
-                    // Conversion simple String → type du paramètre
-                    args[i] = Util.convertValue(value, paramType);
-                } else {
-                    // Pas de paramètre correspondant → on met null (ou valeur par défaut)
-                    args[i] = null;
-                }
-            }
+                        if(Util.isSimpleType(paramType)) {
+                            // CAS 1 : Type simple (String, Integer, int...)
+                        if (hasRequestParams && requestParams.containsKey(paramName)) {
+                            String[] values = requestParams.get(paramName);
+                            String value = (values != null && values.length > 0) ? values[0] : null;
+
+                            // Conversion simple String → type du paramètre
+                            args[i] = Util.convertValue(value, paramType);
+                        } else {
+                            args[i] = null;
+                        }
+                        }
+
+                        else {
+                            // CAS 2 : Objet (Personne, etc.)
+                            // 1. Instancier l'objet (appelle le constructeur vide)
+                            Object obj = paramType.getDeclaredConstructor().newInstance();
+
+                            // 2. Récupérer tous les champs de la classe
+                            Field[] fields = paramType.getDeclaredFields();
+
+                            //Parcourrir tous les champs
+                            for (Field field : fields) {
+                                field.setAccessible(true); // permet d'accéder aux champs privés
+                                String fieldName = field.getName(); // ex: 'nom', 'prenom','age'
+                            
+                            // 3. Est-ce que le formulaire a envoyé ce nom ?
+                            if (hasRequestParams && requestParams.containsKey(fieldName)) {
+                                String[] values = requestParams.get(fieldName);
+                                String value = (values != null && values.length > 0) ? values[0] : null;
+
+                                // 4. Convertir et injecter la valeur dans le champ
+                                Object convertedValue = Util.convertValue(value, field.getType());
+                                field.set(obj, convertedValue);
+                                }
+                            } 
+                            //5. On met l'objet construit dans le tableau d'arguments
+                            args[i] = obj;                 
+                        }
+                        
+                        
+                    }      
 
             
-            
-        
+                
                // 4. Invoke avec les arguments construits
                 Object result = methodToInvoke.invoke(controllerInstance, args);
-                
+                //Spprint6
                 // if (Util.haveParameter(methodToInvoke, "org.springframework.web.context.WebApplicationContext")) {
                 //     if (springContext == null) {
                 //         throw new ServletException(
