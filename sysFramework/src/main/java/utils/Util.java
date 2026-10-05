@@ -3,45 +3,46 @@ package main.java.utils;
 import java.lang.reflect.Method;
 
 public class Util {
-    public static boolean haveParameter(Method method, Class<?> parameterType) {
+
+    public static boolean haveParameter(Method method, String parameterTypeName) {
         Class<?>[] parameterTypes = method.getParameterTypes();
-        for (Class<?> type : parameterTypes) {
-            if (type.equals(parameterType)) {
+        for (Class<?> paramType : parameterTypes) {
+            if (paramType.getName().equals(parameterTypeName)) {
                 return true;
             }
         }
         return false;
     }
-    public static String ObjectToStringJson(Object obj) {
-        StringBuilder jsonBuilder = new StringBuilder();
-        jsonBuilder.append("{");
-        Method[] methods = obj.getClass().getDeclaredMethods();
-        boolean firstField = true;
 
-        for (Method method : methods) {
-            if (method.getName().startsWith("get") && method.getParameterCount() == 0) {
-                try {
-                    Object value = method.invoke(obj);
-                    String fieldName = method.getName().substring(3); // Remove "get" prefix
-                    fieldName = Character.toLowerCase(fieldName.charAt(0)) + fieldName.substring(1); // Convert first letter to lowercase
-
-                    if (!firstField) {
-                        jsonBuilder.append(", ");
-                    }
-                    jsonBuilder.append("\"").append(fieldName).append("\": ");
-                    if (value instanceof String) {
-                        jsonBuilder.append("\"").append(value).append("\"");
-                    } else {
-                        jsonBuilder.append(value);
-                    }
-                    firstField = false;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+    /**
+     * Convertit une String (valeur du formulaire) vers le type du paramètre de la méthode.
+     * Gère les types de base pour le moment.
+     */
+    public static Object convertValue(String value, Class<?> targetType) {
+        if (value == null) {
+            return null;
         }
 
-        jsonBuilder.append("}");
-        return jsonBuilder.toString();
+        if (targetType == String.class) {
+            return value;
+        }
+        if (targetType == int.class || targetType == Integer.class) {
+            return Integer.parseInt(value);
+        }
+        if (targetType == long.class || targetType == Long.class) {
+            return Long.parseLong(value);
+        }
+        if (targetType == double.class || targetType == Double.class) {
+            return Double.parseDouble(value);
+        }
+        if (targetType == boolean.class || targetType == Boolean.class) {
+            return Boolean.parseBoolean(value);
+        }
+        if (targetType == float.class || targetType == Float.class) {
+            return Float.parseFloat(value);
+        }
+
+        // Pour les autres types on renvoie la String brute
+        return value;
     }
 }
