@@ -17,6 +17,8 @@ import main.java.view.ModelAndView;
 import java.util.Map;
 
 import org.springframework.web.context.WebApplicationContext;
+
+import main.java.utils.JsonUtil;
 import main.java.utils.Util;
 
 public class FrontControllerServlet extends HttpServlet {
@@ -52,22 +54,67 @@ public class FrontControllerServlet extends HttpServlet {
 
                 Class<?> returnType = methodToInvoke.getReturnType();
 
-                if (returnType != ModelAndView.class && methodToInvoke.isAnnotationPresent(WebApiRest.class)) {
+                if (returnType != ModelAndView.class &&  !(methodToInvoke.isAnnotationPresent(WebApiRest.class))) {
                     throw new ServletException("La méthode " + methodToInvoke.getName() + " du controller "
                             + controllerClass.getSimpleName() + " doit retourner un objet ModelAndView.");
                 }
                 Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
 
-                Object result;
-                if (Util.haveParameter(methodToInvoke, WebApplicationContext.class)) {
+                // 1. Récupérer les paramètres de la méthode
+                java.lang.reflect.Parameter[] methodParams = methodToInvoke.getParameters();
+
+                // 2. Préparer le tableau d'arguments
+                Object[] args = new Object[methodParams.length];
+
+                // 3. Récupérer les paramètres de la requête
+                Map<String, String[]> requestParams = req.getParameterMap();
+
+                boolean hasRequestParams = requestParams != null && !requestParams.isEmpty();
+
+                for(int i = 0; i < methodParams.length; i++) {
+                    java.lang.reflect.Parameter param = methodParams[i];
+                    String paramName = param.getName(); //nom du paramètre de la méthode
+                    Class<?> paramType = param.getType(); //type du paramètre de la méthode 
+
+                    // Cas spécial déjà existant : WebApplicationContext
+                if (paramType.getName().equals("org.springframework.web.context.WebApplicationContext")) {
                     if (springContext == null) {
                         throw new ServletException(
-                                "Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans web.xml");
+                            "Aucun springContext disponible : vérifiez que ContextLoaderListener est bien dans web.xml");
                     }
-                    result = (Object) methodToInvoke.invoke(controllerInstance, springContext);
-                } else {
-                    result = (Object) methodToInvoke.invoke(controllerInstance);
+                    args[i] = springContext;
+                    continue;
                 }
+
+                // Si la requête a des paramètres → on essaie de matcher
+                if (hasRequestParams && requestParams.containsKey(paramName)) {
+                    String[] values = requestParams.get(paramName);
+                    String value = (values != null && values.length > 0) ? values[0] : null;
+
+                    // Conversion simple String → type du paramètre
+                    args[i] = Util.convertValue(value, paramType);
+                } else {
+                    // Pas de paramètre correspondant → on met null (ou valeur par défaut)
+                    args[i] = null;
+                }
+            }
+
+            
+            
+        
+               // 4. Invoke avec les arguments construits
+                Object result = methodToInvoke.invoke(controllerInstance, args);
+                
+                // if (Util.haveParameter(methodToInvoke, "org.springframework.web.context.WebApplicationContext")) {
+                //     if (springContext == null) {
+                //         throw new ServletException(
+                //                 "Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans web.xml");
+                //     }
+                //     result = (Object) methodToInvoke.invoke(controllerInstance, springContext);
+                // } else {
+                //     result = (Object) methodToInvoke.invoke(controllerInstance);
+                // }
+
 
                 if (result instanceof ModelAndView) {
                     addArgToRequest(req, ((ModelAndView) result).getData());
@@ -79,13 +126,13 @@ public class FrontControllerServlet extends HttpServlet {
                     req.getRequestDispatcher((fullViewPath)).forward(req, resp);
                 } else {
                     if (result instanceof String) {
-                        out.println((String) result);
+                        // out.println((String) result);
                         resp.setContentType("application/json");
                         resp.getWriter().write((String) result);
                     } else {
-                        out.println(result);
+                        // out.println(result);
                         resp.setContentType("application/json");
-                        resp.getWriter().write(Util.ObjectToStringJson(result));
+                        resp.getWriter().write(JsonUtil.ObjectToStringJson(result));
                     }
                 }
 
