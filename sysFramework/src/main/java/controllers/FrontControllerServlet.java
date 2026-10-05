@@ -60,17 +60,61 @@ public class FrontControllerServlet extends HttpServlet {
                 }
                 Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
 
-                Object result;
-                
-                if (Util.haveParameter(methodToInvoke, "org.springframework.web.context.WebApplicationContext")) {
+                // 1. Récupérer les paramètres de la méthode
+                java.lang.reflect.Parameter[] methodParams = methodToInvoke.getParameters();
+
+                // 2. Préparer le tableau d'arguments
+                Object[] args = new Object[methodParams.length];
+
+                // 3. Récupérer les paramètres de la requête
+                Map<String, String[]> requestParams = req.getParameterMap();
+
+                boolean hasRequestParams = requestParams != null && !requestParams.isEmpty();
+
+                for(int i = 0; i < methodParams.length; i++) {
+                    java.lang.reflect.Parameter param = methodParams[i];
+                    String paramName = param.getName(); //nom du paramètre de la méthode
+                    Class<?> paramType = param.getType(); //type du paramètre de la méthode 
+
+                    // Cas spécial déjà existant : WebApplicationContext
+                if (paramType.getName().equals("org.springframework.web.context.WebApplicationContext")) {
                     if (springContext == null) {
                         throw new ServletException(
-                                "Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans web.xml");
+                            "Aucun springContext disponible : vérifiez que ContextLoaderListener est bien dans web.xml");
                     }
-                    result = (Object) methodToInvoke.invoke(controllerInstance, springContext);
-                } else {
-                    result = (Object) methodToInvoke.invoke(controllerInstance);
+                    args[i] = springContext;
+                    continue;
                 }
+
+                // Si la requête a des paramètres → on essaie de matcher
+                if (hasRequestParams && requestParams.containsKey(paramName)) {
+                    String[] values = requestParams.get(paramName);
+                    String value = (values != null && values.length > 0) ? values[0] : null;
+
+                    // Conversion simple String → type du paramètre
+                    args[i] = Util.convertValue(value, paramType);
+                } else {
+                    // Pas de paramètre correspondant → on met null (ou valeur par défaut)
+                    args[i] = null;
+                }
+            }
+
+            
+            
+        
+               // 4. Invoke avec les arguments construits
+                Object result = methodToInvoke.invoke(controllerInstance, args);
+                
+                // if (Util.haveParameter(methodToInvoke, "org.springframework.web.context.WebApplicationContext")) {
+                //     if (springContext == null) {
+                //         throw new ServletException(
+                //                 "Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans web.xml");
+                //     }
+                //     result = (Object) methodToInvoke.invoke(controllerInstance, springContext);
+                // } else {
+                //     result = (Object) methodToInvoke.invoke(controllerInstance);
+                // }
+
 
                 if (result instanceof ModelAndView) {
                     addArgToRequest(req, ((ModelAndView) result).getData());
