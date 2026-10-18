@@ -21,7 +21,14 @@ import org.springframework.web.context.WebApplicationContext;
 
 import main.java.utils.JsonUtil;
 import main.java.utils.Util;
+import jakarta.servlet.annotation.MultipartConfig;
+import main.java.model.MapFile;
+import jakarta.servlet.http.Part;
 
+@MultipartConfig(maxFileSize = 10 * 1024 * 1024, // 10 Mo par fichier
+        maxRequestSize = 20 * 1024 * 1024, // 20 Mo pour toute la requête
+        fileSizeThreshold = 1024 * 1024 // seuil avant écriture temporaire
+)
 public class FrontControllerServlet extends HttpServlet {
 
     protected void processRequest(HttpServletRequest req, HttpServletResponse resp)
@@ -55,7 +62,7 @@ public class FrontControllerServlet extends HttpServlet {
 
                 Class<?> returnType = methodToInvoke.getReturnType();
 
-                if (returnType != ModelAndView.class &&  !(methodToInvoke.isAnnotationPresent(WebApiRest.class))) {
+                if (returnType != ModelAndView.class && !(methodToInvoke.isAnnotationPresent(WebApiRest.class))) {
                     throw new ServletException("La méthode " + methodToInvoke.getName() + " du controller "
                             + controllerClass.getSimpleName() + " doit retourner un objet ModelAndView.");
                 }
@@ -73,24 +80,33 @@ public class FrontControllerServlet extends HttpServlet {
                 boolean hasRequestParams = requestParams != null && !requestParams.isEmpty();
 
                 // 4. Parcourir les paramètres de la méthode
-                        for(int i = 0; i < methodParams.length; i++) {
-                            java.lang.reflect.Parameter param = methodParams[i];
-                            String paramName = param.getName(); //nom du paramètre de la méthode
-                            Class<?> paramType = param.getType(); //type du paramètre de la méthode 
+                for (int i = 0; i < methodParams.length; i++) {
+                    java.lang.reflect.Parameter param = methodParams[i];
+                    String paramName = param.getName(); // nom du paramètre de la méthode
+                    Class<?> paramType = param.getType(); // type du paramètre de la méthode
 
-                            // Cas spécial déjà existant : WebApplicationContext
-                             if (paramType.getName().equals("org.springframework.web.context.WebApplicationContext")) {
-                            if (springContext == null) {
-                                throw new ServletException(
+                    // Cas spécial déjà existant : WebApplicationContext
+                    if (paramType.getName().equals("org.springframework.web.context.WebApplicationContext")) {
+                        if (springContext == null) {
+                            throw new ServletException(
                                     "Aucun springContext disponible : vérifiez que ContextLoaderListener est bien dans web.xml");
-                            }
-                            args[i] = springContext;
-                            continue;
-                             }
+                        }
+                        args[i] = springContext;
+                        continue;
+                    }
 
+                    // 2. Cas MapFile (paramètre direct de la méthode)
+                    if (paramType == MapFile.class) {
+                        Part part = null;
+                        if (Util.isMultipart(req)) {
+                            part = req.getPart(paramName);
+                        }
+                        args[i] = Util.buildMapFile(part);
+                        continue;
+                    }
 
-                        if(Util.isSimpleType(paramType)) {
-                            // CAS 1 : Type simple (String, Integer, int...)
+                    if (Util.isSimpleType(paramType)) {
+                        // CAS 1 : Type simple (String, Integer, int...)
                         if (hasRequestParams && requestParams.containsKey(paramName)) {
                             String[] values = requestParams.get(paramName);
                             String value = (values != null && values.length > 0) ? values[0] : null;
@@ -100,53 +116,33 @@ public class FrontControllerServlet extends HttpServlet {
                         } else {
                             args[i] = null;
                         }
-                        }
+                    }
 
-                        else {
-                            // CAS 2 : Objet (Personne, etc.)
-                            // 1. Instancier l'objet (appelle le constructeur vide)
-                            Object obj = paramType.getDeclaredConstructor().newInstance();
+                    else {
+                        // CAS 2 : Type complexe (objet)-binding récursif
+                        // On utilise la méthode bindObject pour créer l'objet à partir des paramètres
+                        // de la requ
+                        // prefix = "" car on est au niveau du paramètre de la méthode
+                        args[i] = Util.bindObject(paramType, "", requestParams, req);
 
-                            // 2. Récupérer tous les champs de la classe
-                            Field[] fields = paramType.getDeclaredFields();
+                    }
 
-                            //Parcourrir tous les champs
-                            for (Field field : fields) {
-                                field.setAccessible(true); // permet d'accéder aux champs privés
-                                String fieldName = field.getName(); // ex: 'nom', 'prenom','age'
-                            
-                            // 3. Est-ce que le formulaire a envoyé ce nom ?
-                            if (hasRequestParams && requestParams.containsKey(fieldName)) {
-                                String[] values = requestParams.get(fieldName);
-                                String value = (values != null && values.length > 0) ? values[0] : null;
+                }
 
-                                // 4. Convertir et injecter la valeur dans le champ
-                                Object convertedValue = Util.convertValue(value, field.getType());
-                                field.set(obj, convertedValue);
-                                }
-                            } 
-                            //5. On met l'objet construit dans le tableau d'arguments
-                            args[i] = obj;                 
-                        }
-                        
-                        
-                    }      
-
-            
-                
-               // 4. Invoke avec les arguments construits
+                // 4. Invoke avec les arguments construits
                 Object result = methodToInvoke.invoke(controllerInstance, args);
-                //Spprint6
-                // if (Util.haveParameter(methodToInvoke, "org.springframework.web.context.WebApplicationContext")) {
-                //     if (springContext == null) {
-                //         throw new ServletException(
-                //                 "Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans web.xml");
-                //     }
-                //     result = (Object) methodToInvoke.invoke(controllerInstance, springContext);
-                // } else {
-                //     result = (Object) methodToInvoke.invoke(controllerInstance);
+                // Spprint6
+                // if (Util.haveParameter(methodToInvoke,
+                // "org.springframework.web.context.WebApplicationContext")) {
+                // if (springContext == null) {
+                // throw new ServletException(
+                // "Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans
+                // web.xml");
                 // }
-
+                // result = (Object) methodToInvoke.invoke(controllerInstance, springContext);
+                // } else {
+                // result = (Object) methodToInvoke.invoke(controllerInstance);
+                // }
 
                 if (result instanceof ModelAndView) {
                     addArgToRequest(req, ((ModelAndView) result).getData());
