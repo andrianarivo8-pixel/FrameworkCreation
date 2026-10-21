@@ -17,21 +17,52 @@ import main.java.utils.ScanAnnotation;
 import main.java.utils.UtilAnalyser;
 
 public class FrontControllerListener implements ServletContextListener {
-   
-    private static final String SPRING_ROOT = "org.springframework.web.context.WebApplicationContext.ROOT";
 
+    private static final String SPRING_ROOT = "org.springframework.web.context.WebApplicationContext.ROOT";
 
 @Override
 public void contextInitialized(ServletContextEvent sce) {
     ServletContext context = sce.getServletContext();
-    Object springContext = context.getAttribute(SPRING_ROOT);
-    context.setAttribute(SPRING_ROOT, springContext);
+    try {
+        java.io.InputStream is = FrontControllerListener.class.getClassLoader().getResourceAsStream("application.properties");
+        if(is==null) {
+            System.out.println("application.properties non trouve dans le classpath");
+        } else {
+            java.util.Properties props = new java.util.Properties();
+            props.load(is);
+            is.close();
 
-    System.out.println("springContext trouvé : " + (springContext != null));
+            // Stocker toutes les properties dans le contexte
+            context.setAttribute("app.properties", props);
+            // Préparer le dossier d'upload tout de suite
+            String uploadPath = props.getProperty("upload.path");
+            if (uploadPath != null && !uploadPath.trim().isEmpty()) {
+                java.io.File dir = new java.io.File(uploadPath.trim());
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+                context.setAttribute("upload.path", dir.getAbsolutePath());
+                System.out.println("upload.path = " + dir.getAbsolutePath());
+            } else {
+                System.err.println("ERREUR : clé upload.path manquante dans application.properties");
+            }
+        }
+    }catch(
+
+    Exception e)
+    {
+        System.err.println("ERREUR los du chargement de app.properties :");
+        e.printStackTrace();
+    }
+
+    Object springContext = context.getAttribute(SPRING_ROOT);context.setAttribute(SPRING_ROOT,springContext);
+
+    System.out.println("springContext trouvé : "+(springContext!=null));
 
     // System.out.println("=== FrontControllerListener démarre ===");
-    
-    try {
+
+    try
+    {
         String scanPackage = context.getInitParameter("scanPackage");
         System.out.println("scanPackage lu = " + scanPackage);
 
@@ -50,11 +81,11 @@ public void contextInitialized(ServletContextEvent sce) {
 
         for (Class<?> clazz : annotatedClasses) {
             System.out.println("Scanning class: " + clazz.getName());
-            
+
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(UrlMapping.class)) {
                     UrlMapping annotation = method.getAnnotation(UrlMapping.class);
-                    
+
                     String url = annotation.value();
                     HttpMethod httpMethod = annotation.method();
 
@@ -70,7 +101,9 @@ public void contextInitialized(ServletContextEvent sce) {
         context.setAttribute("urlMappings", urlMappings);
         System.out.println("SUCCESS : " + urlMappings.size() + " mappings enregistrés dans le contexte !");
 
-    } catch (Exception e) {
+    }catch(
+    Exception e)
+    {
         System.err.println(" ERREUR dans Listener :");
         e.printStackTrace();
     }
@@ -80,5 +113,5 @@ public void contextInitialized(ServletContextEvent sce) {
     public void contextDestroyed(ServletContextEvent sce) {
         // Code à exécuter lors de la destruction du contexte (si nécessaire)
     }
-    
+
 }
