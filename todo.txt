@@ -152,3 +152,20 @@ Coté framework
 
 7-bis : binding objet 
 save(Personne emp)
+
+Sprint8
+Sprint9: session 
+instance 1 pour chq controller
+une seule fois et stocké en memoire -> context(web.xml)
+creation classe session : map , string ,object, methode utilitaire recupere variable/add
+methode d'action
+
+cote framework
+ra misy tpe session
+creer instance map<(à partir httpsession)>
+apres invoke, màj httpsession
+var nasina session(map)-tsindrina aniny le httpsession(boucle)
+
+
+verif si hite-si oui injectena
+parametre de type class
