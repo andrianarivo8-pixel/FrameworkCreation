@@ -105,6 +105,11 @@ public class FrontControllerServlet extends HttpServlet {
                         continue;
                     }
 
+                    // 2. Cas spécial : HttpServletRequest ← ICI
+                    if (paramType == HttpServletRequest.class) {
+                        args[i] = req;
+                        continue;
+                    }
                     if (Util.isSimpleType(paramType)) {
                         // CAS 1 : Type simple (String, Integer, int...)
                         if (hasRequestParams && requestParams.containsKey(paramName)) {
@@ -121,7 +126,7 @@ public class FrontControllerServlet extends HttpServlet {
                     else {
                         // CAS 2 : Type complexe (objet)-binding récursif
                         // On utilise la méthode bindObject pour créer l'objet à partir des paramètres
-                        // de la requ
+                        // de la requete
                         // prefix = "" car on est au niveau du paramètre de la méthode
                         args[i] = Util.bindObject(paramType, "", requestParams, req);
 
@@ -131,6 +136,7 @@ public class FrontControllerServlet extends HttpServlet {
 
                 // 4. Invoke avec les arguments construits
                 Object result = methodToInvoke.invoke(controllerInstance, args);
+                
                 // Spprint6
                 // if (Util.haveParameter(methodToInvoke,
                 // "org.springframework.web.context.WebApplicationContext")) {

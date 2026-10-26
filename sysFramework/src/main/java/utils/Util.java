@@ -131,17 +131,21 @@ public class Util {
         return contentType != null && contentType.toLowerCase().startsWith("multipart/");
     }
 
-    private static String uploadPath = null;
-
     /**
      * Récupère le chemin d'upload depuis le contexte de la servlet (lazy).
      */
-    public static String getUploadPath(ServletContext context) throws Exception {
-        Object path = context.getAttribute("upload.path");
-        if (path == null) {
-            throw new Exception("upload.path non initialisé. Vérifiez application.properties et le Listener.");
+    private static String uploadPath = null;
+
+    public static void setUploadPath(String path) {
+        uploadPath = path;
+    }
+
+    public static String getUploadPath() throws Exception {
+        if (uploadPath == null || uploadPath.isEmpty()) {
+            throw new Exception(
+                    "upload.path non initialisé. Vérifiez application.properties et le Listener.");
         }
-        return path.toString();
+        return uploadPath;
     }
 
     /**
