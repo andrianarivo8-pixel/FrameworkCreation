@@ -1,4 +1,4 @@
-sysFramework/lib
+sysFramework/lib/
 sysFramework/build_jar
 deploy.sh
 todo.txt

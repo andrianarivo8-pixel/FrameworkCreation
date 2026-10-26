@@ -8,7 +8,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.Part;
 
-import main.java.model.MapFile;  
+import main.java.model.MapFile;
 
 public class Util {
 
@@ -69,14 +69,15 @@ public class Util {
      * Binding récursif d'un objet à partir des paramètres de la requête.
      *
      * @param clazz         la classe à instancier
-     * @param prefix        préfixe des noms de champs ("" ou "adresse" ou "adresse.pays")
+     * @param prefix        préfixe des noms de champs ("" ou "adresse" ou
+     *                      "adresse.pays")
      * @param requestParams map des paramètres HTTP (champs texte)
      * @param request       la requête (pour les fichiers multipart)
      * @return l'objet rempli
      */
     public static Object bindObject(Class<?> clazz, String prefix,
-                                    Map<String, String[]> requestParams,
-                                    HttpServletRequest request) throws Exception {
+            Map<String, String[]> requestParams,
+            HttpServletRequest request) throws Exception {
 
         Object obj = clazz.getDeclaredConstructor().newInstance();
         Field[] fields = clazz.getDeclaredFields();
@@ -130,30 +131,20 @@ public class Util {
         return contentType != null && contentType.toLowerCase().startsWith("multipart/");
     }
 
-    private static String uploadPath = null;
-
     /**
      * Récupère le chemin d'upload depuis le contexte de la servlet (lazy).
      */
-    public static String getUploadPath(ServletContext context) throws Exception {
-        if (uploadPath != null) {
-            return uploadPath;
-        }
+    private static String uploadPath = null;
 
-        String path = context.getInitParameter("upload.path");
-        if (path == null || path.trim().isEmpty()) {
-            throw new Exception("Paramètre 'upload.path' manquant dans web.xml");
-        }
+    public static void setUploadPath(String path) {
+        uploadPath = path;
+    }
 
-        java.io.File dir = new java.io.File(path.trim());
-        if (!dir.exists() && !dir.mkdirs()) {
-            throw new Exception("Impossible de créer le dossier d'upload : " + path);
+    public static String getUploadPath() throws Exception {
+        if (uploadPath == null || uploadPath.isEmpty()) {
+            throw new Exception(
+                    "upload.path non initialisé. Vérifiez application.properties et le Listener.");
         }
-        if (!dir.isDirectory()) {
-            throw new Exception("upload.path n'est pas un dossier : " + path);
-        }
-
-        uploadPath = dir.getAbsolutePath();
         return uploadPath;
     }
 

@@ -14,6 +14,8 @@ import main.java.annotations.WebApiRest;
 import main.java.model.Mapping;
 import main.java.model.UrlMethod;
 import main.java.view.ModelAndView;
+import main.java.model.MaSession;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.Map;
 
@@ -105,6 +107,16 @@ public class FrontControllerServlet extends HttpServlet {
                         continue;
                     }
 
+                    // 2. Cas spécial : HttpServletRequest ← ICI
+                    if (paramType == HttpServletRequest.class) {
+                        args[i] = req;
+                        continue;
+                    }
+                    // Cas MaSession
+                    if (paramType == MaSession.class) {
+                        args[i] = MaSession.from(req.getSession(true));
+                        continue;
+                    }
                     if (Util.isSimpleType(paramType)) {
                         // CAS 1 : Type simple (String, Integer, int...)
                         if (hasRequestParams && requestParams.containsKey(paramName)) {
@@ -121,7 +133,7 @@ public class FrontControllerServlet extends HttpServlet {
                     else {
                         // CAS 2 : Type complexe (objet)-binding récursif
                         // On utilise la méthode bindObject pour créer l'objet à partir des paramètres
-                        // de la requ
+                        // de la requete
                         // prefix = "" car on est au niveau du paramètre de la méthode
                         args[i] = Util.bindObject(paramType, "", requestParams, req);
 
@@ -131,18 +143,16 @@ public class FrontControllerServlet extends HttpServlet {
 
                 // 4. Invoke avec les arguments construits
                 Object result = methodToInvoke.invoke(controllerInstance, args);
-                // Spprint6
-                // if (Util.haveParameter(methodToInvoke,
-                // "org.springframework.web.context.WebApplicationContext")) {
-                // if (springContext == null) {
-                // throw new ServletException(
-                // "Aucun springContext dispo: verifez que ContexteLoaderListener est bien dans
-                // web.xml");
-                // }
-                // result = (Object) methodToInvoke.invoke(controllerInstance, springContext);
-                // } else {
-                // result = (Object) methodToInvoke.invoke(controllerInstance);
-                // }
+
+                // ===== Flush de la session =====
+                for (int i = 0; i < methodParams.length; i++) {
+                    if (methodParams[i].getType() == MaSession.class && args[i] instanceof MaSession) {
+                        HttpSession httpSession = req.getSession(false);
+                        if (httpSession != null) {
+                            ((MaSession) args[i]).flushTo(httpSession);
+                        }
+                    }
+                }
 
                 if (result instanceof ModelAndView) {
                     addArgToRequest(req, ((ModelAndView) result).getData());

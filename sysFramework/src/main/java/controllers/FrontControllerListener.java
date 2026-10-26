@@ -15,70 +15,111 @@ import main.java.model.Mapping;
 import main.java.model.UrlMethod;
 import main.java.utils.ScanAnnotation;
 import main.java.utils.UtilAnalyser;
+import main.java.utils.Util;
 
 public class FrontControllerListener implements ServletContextListener {
-   
+
     private static final String SPRING_ROOT = "org.springframework.web.context.WebApplicationContext.ROOT";
 
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+        ServletContext context = sce.getServletContext();
+        // Chargement application.properties
+        try {
+            java.io.InputStream is = FrontControllerListener.class
+                    .getClassLoader()
+                    .getResourceAsStream("application.properties");
 
-@Override
-public void contextInitialized(ServletContextEvent sce) {
-    ServletContext context = sce.getServletContext();
-    Object springContext = context.getAttribute(SPRING_ROOT);
-    context.setAttribute(SPRING_ROOT, springContext);
+            if (is == null) {
+                System.err.println("ERREUR : application.properties introuvable dans le classpath");
+            } else {
+                java.util.Properties props = new java.util.Properties();
+                props.load(is);
+                is.close();
 
-    System.out.println("springContext trouvé : " + (springContext != null));
+                context.setAttribute("app.properties", props);
 
-    // System.out.println("=== FrontControllerListener démarre ===");
-    
-    try {
-        String scanPackage = context.getInitParameter("scanPackage");
-        System.out.println("scanPackage lu = " + scanPackage);
+                String uploadPath = props.getProperty("upload.path");
 
-        if (scanPackage == null || scanPackage.isEmpty()) {
-            System.out.println("ERREUR: scanPackage est vide ou null");
-            return;
-        }
+                if (uploadPath != null && !uploadPath.trim().isEmpty()) {
 
-        List<Class<?>> allClasses = UtilAnalyser.findClasses(scanPackage);
-        System.out.println("Nombre de classes trouvees : " + allClasses.size());
+                    java.io.File dir = new java.io.File(uploadPath.trim());
 
-        List<Class<?>> annotatedClasses = ScanAnnotation.findAnnotatedClasses(allClasses, Controller.class);
-        System.out.println("Nombre de @Controller trouves : " + annotatedClasses.size());
+                    if (!dir.exists()) {
+                        dir.mkdirs();
+                    }
 
-        Map<UrlMethod, Mapping> urlMappings = new HashMap<>();
+                    // ===== ICI =====
+                    String absolute = dir.getAbsolutePath();
+                    Util.setUploadPath(absolute);
+                    context.setAttribute("upload.path", absolute);
+                    System.out.println("upload.path = " + absolute);
+                    // ================
 
-        for (Class<?> clazz : annotatedClasses) {
-            System.out.println("Scanning class: " + clazz.getName());
-            
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(UrlMapping.class)) {
-                    UrlMapping annotation = method.getAnnotation(UrlMapping.class);
-                    
-                    String url = annotation.value();
-                    HttpMethod httpMethod = annotation.method();
-
-                    UrlMethod urlMethod = new UrlMethod(url, httpMethod);
-                    Mapping mapping = new Mapping(clazz, method);
-
-                    urlMappings.put(urlMethod, mapping);
-                    System.out.println("  → Mapping ajouté : " + urlMethod);
+                } else {
+                    System.err.println("ERREUR : clé upload.path manquante");
                 }
             }
+        } catch (Exception e) {
+            System.err.println("ERREUR chargement application.properties");
+            e.printStackTrace();
         }
 
-        context.setAttribute("urlMappings", urlMappings);
-        System.out.println("SUCCESS : " + urlMappings.size() + " mappings enregistrés dans le contexte !");
+        Object springContext = context.getAttribute(SPRING_ROOT);
+        context.setAttribute(SPRING_ROOT, springContext);
 
-    } catch (Exception e) {
-        System.err.println(" ERREUR dans Listener :");
-        e.printStackTrace();
+        System.out.println("springContext trouvé : " + (springContext != null));
+
+        // System.out.println("=== FrontControllerListener démarre ===");
+
+        try {
+            String scanPackage = context.getInitParameter("scanPackage");
+            System.out.println("scanPackage lu = " + scanPackage);
+
+            if (scanPackage == null || scanPackage.isEmpty()) {
+                System.out.println("ERREUR: scanPackage est vide ou null");
+                return;
+            }
+
+            List<Class<?>> allClasses = UtilAnalyser.findClasses(scanPackage);
+            System.out.println("Nombre de classes trouvees : " + allClasses.size());
+
+            List<Class<?>> annotatedClasses = ScanAnnotation.findAnnotatedClasses(allClasses, Controller.class);
+            System.out.println("Nombre de @Controller trouves : " + annotatedClasses.size());
+
+            Map<UrlMethod, Mapping> urlMappings = new HashMap<>();
+
+            for (Class<?> clazz : annotatedClasses) {
+                System.out.println("Scanning class: " + clazz.getName());
+
+                for (Method method : clazz.getDeclaredMethods()) {
+                    if (method.isAnnotationPresent(UrlMapping.class)) {
+                        UrlMapping annotation = method.getAnnotation(UrlMapping.class);
+
+                        String url = annotation.value();
+                        HttpMethod httpMethod = annotation.method();
+
+                        UrlMethod urlMethod = new UrlMethod(url, httpMethod);
+                        Mapping mapping = new Mapping(clazz, method);
+
+                        urlMappings.put(urlMethod, mapping);
+                        System.out.println("  → Mapping ajouté : " + urlMethod);
+                    }
+                }
+            }
+
+            context.setAttribute("urlMappings", urlMappings);
+            System.out.println("SUCCESS : " + urlMappings.size() + " mappings enregistrés dans le contexte !");
+
+        } catch (Exception e) {
+            System.err.println(" ERREUR dans Listener :");
+            e.printStackTrace();
+        }
     }
-}
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         // Code à exécuter lors de la destruction du contexte (si nécessaire)
     }
-    
+
 }
