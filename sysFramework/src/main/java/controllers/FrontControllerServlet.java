@@ -10,7 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import main.java.annotations.WebApiRest;
+import main.java.annotations.*;
 import main.java.model.Mapping;
 import main.java.model.UrlMethod;
 import main.java.view.ModelAndView;
@@ -62,12 +62,37 @@ public class FrontControllerServlet extends HttpServlet {
                 Class<?> controllerClass = mapping.getClassName();
                 Method methodToInvoke = mapping.getMethodName();
 
+                // ========== SPRINT 10 : AUTH ==========
+                if (methodToInvoke.isAnnotationPresent(main.java.annotations.Auth.class)) {
+
+                    String authKey = (String) context.getAttribute("auth.session.key");
+                    if (authKey == null || authKey.isEmpty()) {
+                        authKey = "user"; // défaut
+                    }
+
+                    String loginUrl = (String) context.getAttribute("auth.login.url");
+                    if (loginUrl == null || loginUrl.isEmpty()) {
+                        loginUrl = "/login-form";
+                    }
+
+                    HttpSession httpSession = req.getSession(false); // false = ne crée pas de session
+                    Object userAttr = (httpSession != null) ? httpSession.getAttribute(authKey) : null;
+
+                    if (userAttr == null) {
+                        // Non connecté → redirection vers le login
+                        String redirectTo = req.getContextPath() + loginUrl;
+                        resp.sendRedirect(redirectTo);
+                        return; // important : on arrête ici, pas d'invoke
+                    }
+                } //fin AUTH
+
                 Class<?> returnType = methodToInvoke.getReturnType();
 
                 if (returnType != ModelAndView.class && !(methodToInvoke.isAnnotationPresent(WebApiRest.class))) {
                     throw new ServletException("La méthode " + methodToInvoke.getName() + " du controller "
                             + controllerClass.getSimpleName() + " doit retourner un objet ModelAndView.");
                 }
+
                 Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
 
                 // 1. Récupérer les paramètres de la méthode

@@ -54,7 +54,26 @@ public class FrontControllerListener implements ServletContextListener {
                     Util.setUploadPath(absolute);
                     context.setAttribute("upload.path", absolute);
                     System.out.println("upload.path = " + absolute);
-                    // ================
+                    
+                    // ===== Auth (Sprint 10) =====
+                    String authSessionKey = props.getProperty("auth.session.key");
+                    if (authSessionKey != null && !authSessionKey.trim().isEmpty()) {
+                        context.setAttribute("auth.session.key", authSessionKey.trim());
+                        System.out.println("auth.session.key = " + authSessionKey.trim());
+                    } else {
+                        // valeur par défaut si absente
+                        context.setAttribute("auth.session.key", "user");
+                        System.out.println("auth.session.key = user (défaut)");
+                    }
+
+                    String authLoginUrl = props.getProperty("auth.login.url");
+                    if (authLoginUrl != null && !authLoginUrl.trim().isEmpty()) {
+                        context.setAttribute("auth.login.url", authLoginUrl.trim());
+                        System.out.println("auth.login.url = " + authLoginUrl.trim());
+                    } else {
+                        context.setAttribute("auth.login.url", "/login-form");
+                        System.out.println("auth.login.url = /login-form (défaut)");
+                    }
 
                 } else {
                     System.err.println("ERREUR : clé upload.path manquante");
