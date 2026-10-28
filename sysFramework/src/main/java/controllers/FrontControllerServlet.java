@@ -65,12 +65,12 @@ public class FrontControllerServlet extends HttpServlet {
                 // ========== SPRINT 10 : AUTH ==========
                 if (methodToInvoke.isAnnotationPresent(main.java.annotations.Auth.class)) {
 
-                    String authKey = (String) context.getAttribute("auth.session.key");
-                    if (authKey == null || authKey.isEmpty()) {
-                        authKey = "user"; // défaut
-                    }
+                    Auth authAnnotation = methodToInvoke.getAnnotation(Auth.class);
 
+                    String authKey = (String) context.getAttribute("auth.session.key");
+                    String roleKey = (String) context.getAttribute("auth.role.key");
                     String loginUrl = (String) context.getAttribute("auth.login.url");
+
                     if (loginUrl == null || loginUrl.isEmpty()) {
                         loginUrl = "/login-form";
                     }
@@ -78,13 +78,37 @@ public class FrontControllerServlet extends HttpServlet {
                     HttpSession httpSession = req.getSession(false); // false = ne crée pas de session
                     Object userAttr = (httpSession != null) ? httpSession.getAttribute(authKey) : null;
 
+                    // 1.doit etre connecté
                     if (userAttr == null) {
                         // Non connecté → redirection vers le login
                         String redirectTo = req.getContextPath() + loginUrl;
                         resp.sendRedirect(redirectTo);
                         return; // important : on arrête ici, pas d'invoke
                     }
-                } //fin AUTH
+                    // 2.Verifier les roles si precisés
+                    String[] requiredRoles = authAnnotation.roles();
+                    if (requiredRoles != null && requiredRoles.length > 0) {
+                        Object roleAttr = httpSession.getAttribute(roleKey);
+                        String userRole = (roleAttr != null) ? roleAttr.toString() : null;
+
+                        boolean authorized = false;
+                        if (userRole != null) {
+                            for (String required : requiredRoles) {
+                                if (userRole.equals(required)) {
+                                    authorized = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!authorized) {
+                            // Connecté mais mauvais rôle
+                            resp.setContentType("text/html;charset=UTF-8");
+                            resp.getWriter().println("❌ Accès refusé : rôle insuffisant (rôle actuel : "
+                                    + userRole + ")");
+                            return;
+                        }
+                    }
+                } // fin AUTH
 
                 Class<?> returnType = methodToInvoke.getReturnType();
 
