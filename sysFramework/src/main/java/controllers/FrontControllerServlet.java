@@ -196,10 +196,9 @@ public class FrontControllerServlet extends HttpServlet {
                 // ===== Flush de la session =====
                 for (int i = 0; i < methodParams.length; i++) {
                     if (methodParams[i].getType() == MaSession.class && args[i] instanceof MaSession) {
-                        HttpSession httpSession = req.getSession(false);
-                        if (httpSession != null) {
-                            ((MaSession) args[i]).flushTo(httpSession);
-                        }
+                        // true : on s'assure d'avoir une session à écrire
+                        HttpSession httpSession = req.getSession(true);
+                        ((MaSession) args[i]).flushTo(httpSession);
                     }
                 }
 
