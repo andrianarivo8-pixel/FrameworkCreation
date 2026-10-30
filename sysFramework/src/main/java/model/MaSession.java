@@ -69,7 +69,11 @@ public class MaSession {
 
         // 2. Mettre à jour / ajouter toutes les valeurs actuelles
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-            httpSession.setAttribute(entry.getKey(), entry.getValue());
+            if(entry.getValue() != null) {
+                httpSession.setAttribute(entry.getKey(), entry.getValue());
+            } else {
+                httpSession.removeAttribute(entry.getKey());
+            }
         }
     }
 

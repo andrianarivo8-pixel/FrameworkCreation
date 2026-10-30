@@ -4,6 +4,8 @@ deploy.sh
 todo.txt
 .vscode
 sprint7.txt
-todo-Lucas.md
+*.md
 sprint7.txt
-
+*.class
+*.jar
+.gitignore
