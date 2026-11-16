@@ -7,5 +7,5 @@ sprint7.txt
 *.md
 sprint7.txt
 *.class
-*.jar
+sysFramework/lib/*.jar
 .gitignore
