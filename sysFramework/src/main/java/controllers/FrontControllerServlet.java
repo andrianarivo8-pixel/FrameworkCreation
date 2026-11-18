@@ -66,7 +66,7 @@ public class FrontControllerServlet extends HttpServlet {
                 if (methodToInvoke.isAnnotationPresent(main.java.annotations.Auth.class)) {
 
                     Auth authAnnotation = methodToInvoke.getAnnotation(Auth.class);
-                    if(authAnnotation == null){
+                    if (authAnnotation == null) {
                         authAnnotation = controllerClass.getAnnotation(Auth.class);
                     }
 
@@ -124,7 +124,22 @@ public class FrontControllerServlet extends HttpServlet {
                             + controllerClass.getSimpleName() + " doit retourner un objet ModelAndView.");
                 }
 
-                Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
+                // Object controllerInstance =
+                // controllerClass.getDeclaredConstructor().newInstance();
+                @SuppressWarnings("unchecked")
+                Map<Class<?>, Object> controllerList = (Map<Class<?>, Object>) context
+                        .getAttribute("controllersInstance");
+
+                if (controllerList == null) {
+                    controllerList = new HashMap<>();
+                    context.setAttribute("controllersInstance", controllerList);
+                }
+
+                Object controllerInstance = controllerList.get(controllerClass);
+                if (controllerInstance == null) {
+                    controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
+                    controllerList.put(controllerClass, controllerInstance);
+                }
 
                 // 1. Récupérer les paramètres de la méthode
                 java.lang.reflect.Parameter[] methodParams = methodToInvoke.getParameters();
