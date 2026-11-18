@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * L'utilisateur doit être connecté (attribut de session configuré).
  */
 @Retention(RetentionPolicy.RUNTIME)  // visible à l'exécution (réflexion)
-@Target(ElementType.METHOD)          // utilisable sur les méthodes
+@Target({ElementType.TYPE, ElementType.METHOD})  // classe ET méthode       // utilisable sur les méthodes
 public @interface Auth {
     String[] roles() default {}; //liste de roles autorisés
 }

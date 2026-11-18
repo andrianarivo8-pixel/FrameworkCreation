@@ -54,38 +54,38 @@ public class FrontControllerListener implements ServletContextListener {
                     Util.setUploadPath(absolute);
                     context.setAttribute("upload.path", absolute);
                     System.out.println("upload.path = " + absolute);
-                    
+
                 } else {
                     System.err.println("ERREUR : clé upload.path manquante");
                 }
-                 // ===== Auth (Sprint 10) =====
-                    String authSessionKey = props.getProperty("auth.session.key");
-                    if (authSessionKey != null && !authSessionKey.trim().isEmpty()) {
-                        context.setAttribute("auth.session.key", authSessionKey.trim());
-                        System.out.println("auth.session.key = " + authSessionKey.trim());
-                    } else {
-                        // valeur par défaut si absente
-                        context.setAttribute("auth.session.key", "usermira");
-                        System.out.println("auth.session.key = usermira (défaut)");
-                    }
+                // ===== Auth (Sprint 10) =====
+                String authSessionKey = props.getProperty("auth.session.key");
+                if (authSessionKey != null && !authSessionKey.trim().isEmpty()) {
+                    context.setAttribute("auth.session.key", authSessionKey.trim());
+                    System.out.println("auth.session.key = " + authSessionKey.trim());
+                } else {
+                    // valeur par défaut si absente
+                    context.setAttribute("auth.session.key", "mira");
+                    System.out.println("auth.session.key = mira (défaut)");
+                }
 
-                    String authLoginUrl = props.getProperty("auth.login.url");
-                    if (authLoginUrl != null && !authLoginUrl.trim().isEmpty()) {
-                        context.setAttribute("auth.login.url", authLoginUrl.trim());
-                        System.out.println("auth.login.url = " + authLoginUrl.trim());
-                    } else {
-                        context.setAttribute("auth.login.url", "/login-form");
-                        System.out.println("auth.login.url = /login-form (défaut)");
-                    }
-                    // s10-bis ajout roles
-                    String authRoleKey = props.getProperty("auth.session.role.key");
-                    if(authRoleKey != null && !authRoleKey.trim().isEmpty()){
-                        context.setAttribute("auth.session.role.key", authRoleKey.trim());
-                        System.out.println("auth.session.role.key = "+ authRoleKey.trim());
-                    } else{
-                        context.setAttribute("auth.session.role.key", "role");
-                        System.out.println("auth.session.role.key = role(defaut)");
-                    }
+                String authLoginUrl = props.getProperty("auth.login.url");
+                if (authLoginUrl != null && !authLoginUrl.trim().isEmpty()) {
+                    context.setAttribute("auth.login.url", authLoginUrl.trim());
+                    System.out.println("auth.login.url = " + authLoginUrl.trim());
+                } else {
+                    context.setAttribute("auth.login.url", "/login-form");
+                    System.out.println("auth.login.url = /login-form (défaut)");
+                }
+                // s10-bis ajout roles
+                String authRoleKey = props.getProperty("auth.session.role.key");
+                if (authRoleKey != null && !authRoleKey.trim().isEmpty()) {
+                    context.setAttribute("auth.session.role.key", authRoleKey.trim());
+                    System.out.println("auth.session.role.key = " + authRoleKey.trim());
+                } else {
+                    context.setAttribute("auth.session.role.key", "role");
+                    System.out.println("auth.session.role.key = role(defaut)");
+                }
 
             }
         } catch (Exception e) {
@@ -138,6 +138,22 @@ public class FrontControllerListener implements ServletContextListener {
 
             context.setAttribute("urlMappings", urlMappings);
             System.out.println("SUCCESS : " + urlMappings.size() + " mappings enregistrés dans le contexte !");
+
+            // Sprint 11 : instances uniques des controllers
+
+            Map<Class<?>, Object> controllersInstance = new HashMap<>();
+            //preinstancer les controllers, evite le new meme à la premier requete
+            for (Class<?> clazz : annotatedClasses) {
+                try {
+                    Object instance = clazz.getDeclaredConstructor().newInstance();
+                    controllersInstance.put(clazz, instance);
+                    System.out.println("Instance créée : " + clazz.getSimpleName());
+                } catch (Exception e) {
+                    System.err.println("Impossible d'instancier " + clazz.getName());
+                    e.printStackTrace();
+                }
+            }
+            context.setAttribute("controllersInstance", controllersInstance);
 
         } catch (Exception e) {
             System.err.println(" ERREUR dans Listener :");
