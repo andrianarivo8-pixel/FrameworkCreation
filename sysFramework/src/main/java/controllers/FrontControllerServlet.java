@@ -18,6 +18,7 @@ import main.java.model.MaSession;
 import jakarta.servlet.http.HttpSession;
 
 import java.util.Map;
+import java.util.HashMap;
 
 import org.springframework.web.context.WebApplicationContext;
 
