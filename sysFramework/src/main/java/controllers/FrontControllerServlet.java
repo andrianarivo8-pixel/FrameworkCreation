@@ -66,14 +66,21 @@ public class FrontControllerServlet extends HttpServlet {
                 if (methodToInvoke.isAnnotationPresent(main.java.annotations.Auth.class)) {
 
                     Auth authAnnotation = methodToInvoke.getAnnotation(Auth.class);
+                    if(authAnnotation == null){
+                        authAnnotation = controllerClass.getAnnotation(Auth.class);
+                    }
 
                     String authKey = (String) context.getAttribute("auth.session.key");
-                    String roleKey = (String) context.getAttribute("auth.role.key");
+                    String roleKey = (String) context.getAttribute("auth.session.role.key");
                     String loginUrl = (String) context.getAttribute("auth.login.url");
 
                     if (loginUrl == null || loginUrl.isEmpty()) {
                         loginUrl = "/login-form";
                     }
+                    if (authKey == null || authKey.isEmpty())
+                        authKey = "mira";
+                    if (roleKey == null || roleKey.isEmpty())
+                        roleKey = "role";
 
                     HttpSession httpSession = req.getSession(false); // false = ne crée pas de session
                     Object userAttr = (httpSession != null) ? httpSession.getAttribute(authKey) : null;

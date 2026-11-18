@@ -65,8 +65,8 @@ public class FrontControllerListener implements ServletContextListener {
                         System.out.println("auth.session.key = " + authSessionKey.trim());
                     } else {
                         // valeur par défaut si absente
-                        context.setAttribute("auth.session.key", "usermira");
-                        System.out.println("auth.session.key = usermira (défaut)");
+                        context.setAttribute("auth.session.key", "mira");
+                        System.out.println("auth.session.key = mira (défaut)");
                     }
 
                     String authLoginUrl = props.getProperty("auth.login.url");
